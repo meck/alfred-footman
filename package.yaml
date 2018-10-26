@@ -1,6 +1,6 @@
-name:                alfred-wrap
+name:                alfred-footman
 version:             0.1.0.0
-github:              "meck/alfred-wrap"
+github:              "meck/alfred-footman"
 license:             BSD3
 author:              "Johan Eklund"
 maintainer:          "johan@meck.se"
@@ -9,35 +9,34 @@ copyright:           "Johan Eklund"
 extra-source-files:
 - README.md
 - ChangeLog.md
+- TODO.md
 
-# Metadata used when publishing your package
-# synopsis:            Short description of your package
-# category:            Web
-
-# To avoid duplicated efforts in documentation and dealing with the
-# complications of embedding Haddock markup inside cabal files, it is
-# common to point users to the README.md file.
-description:         Please see the README on GitHub at <https://github.com/meck/alfred-wrap#readme>
+description:         A library for <http://www.alfredapp.com> to help writing script actions, providing helpers and persistent state
 
 dependencies:
 - base >= 4.7 && < 5
 
-# ghc-options:
-  # - -Wall
+ghc-options:
+  - -Wall
+  - -Werror
+  - -Wcompat
+  - -Wincomplete-record-updates
+  - -Wincomplete-uni-patterns
+  - -Wredundant-constraints
+
 library:
   source-dirs: src
   dependencies:
   - aeson
-  - text
-  - filepath
   - containers
-  - base64-bytestring
   - bytestring
   - transformers
+  - directory
+  - lifted-base
 
 
 executables:
-  alfred-wrap-exe:
+  footman:
     main:                Main.hs
     source-dirs:         app
     ghc-options:
@@ -45,15 +44,8 @@ executables:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - alfred-wrap
-
-tests:
-  alfred-wrap-test:
-    main:                Spec.hs
-    source-dirs:         test
-    ghc-options:
-    - -threaded
-    - -rtsopts
-    - -with-rtsopts=-N
-    dependencies:
-    - alfred-wrap
+    - alfred-footman
+    - containers
+    - utf8-string
+    - time
+    - strict

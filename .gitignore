@@ -1,3 +1,5 @@
 .stack-work/
-alfred-wrap.cabal
+alfred-footman.cabal
 *~
+footman.alfredworkflow
+testworkflow/footman

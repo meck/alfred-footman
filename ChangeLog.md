@@ -1,3 +1,3 @@
-# Changelog for alfred-wrap
+# Changelog for alfred-footman
 
 ## Unreleased changes
