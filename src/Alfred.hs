@@ -30,6 +30,7 @@
 module Alfred
   ( AlfStatable(..)
   , AlfM
+  , Args
   , alfMain
   , alfArgs
   , envVariable
@@ -41,6 +42,7 @@ module Alfred
   , module Alfred.Types
   , put
   , get
+  , liftIO
   )
 where
 

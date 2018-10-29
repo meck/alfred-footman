@@ -9,7 +9,6 @@ import           Data.ByteString.UTF8           ( fromString
                                                 )
 import qualified Data.Map.Strict               as M
 import           Data.Time                      ( getZonedTime )
-import           Control.Monad.IO.Class
 import           Control.Exception
 import qualified System.IO.Strict              as S
 
