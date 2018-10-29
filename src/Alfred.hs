@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 -- | This module helps to write Alfred script filter indeded to be embedded in workflows.
 --  It also provides a persistent state on disk between runs.
@@ -58,6 +59,7 @@ import           Data.ByteString                ( ByteString )
 import qualified Data.ByteString               as BS
                                                 ( writeFile
                                                 , readFile
+                                                , empty
                                                 )
 import qualified Data.ByteString.Lazy          as LBS
                                                 ( putStr )
@@ -73,10 +75,21 @@ import           System.Exit                    ( die )
 
 -- | Class of the persistent user supplied state data type, 
 -- serialized and stored on disk between runs.
+-- `()` can be used if state is not required
 class AlfStatable s where
   encodeState :: s -> ByteString
   decodeState :: ByteString -> Either AlfredError s
   defaultState :: s  -- ^ The state is initialized at first run
+
+instance AlfStatable ByteString where
+  encodeState = id
+  decodeState = Right 
+  defaultState = BS.empty
+
+instance AlfStatable () where
+  encodeState = const BS.empty
+  decodeState = const $Right ()
+  defaultState = ()
 
 -- | The arguments passed from Alfred
 type Args = [String]
@@ -87,7 +100,6 @@ type AlfM s =  StateT s (ExceptT AlfredError IO)
 -- | Loads the state from disk, reads the arguments,
 --   processes your operations, saves the state. Then
 --   writes any errors to stderr otherwise output the return
-
 alfMain :: AlfStatable s => AlfM s Return -> IO ()
 alfMain ops =
   runExceptT (evalStateT runIt (defaultState :: AlfStatable s => s))

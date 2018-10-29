@@ -153,14 +153,15 @@ defaultMod = Mod
 
 -- | The Possible Modifier Keys
 data Mods = Mods
-  { alt :: Mod
-  , cmd :: Mod
-  , shift :: Mod
-  , fn :: Mod
-  , ctrl :: Mod
+  { alt :: Maybe Mod
+  , cmd :: Maybe Mod
+  , shift :: Maybe Mod
+  , fn :: Maybe Mod
+  , ctrl :: Maybe Mod
   } deriving (Show, Generic)
 
-instance ToJSON Mods
+instance ToJSON Mods where
+  toJSON = genericToJSON $ defaultOptions { omitNothingFields = True }
 
 -- | Constructor:
 --
@@ -169,11 +170,11 @@ instance ToJSON Mods
 -- @
 defaultMods :: Mods
 defaultMods = Mods
-  { alt   = defaultMod
-  , cmd   = defaultMod
-  , shift = defaultMod
-  , fn    = defaultMod
-  , ctrl  = defaultMod
+  { alt   = Nothing
+  , cmd   = Nothing
+  , shift = Nothing
+  , fn    = Nothing
+  , ctrl  = Nothing
   }
 
 -- | Defines the text the user will get

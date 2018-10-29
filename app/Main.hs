@@ -148,8 +148,8 @@ showExamples = do
       }
 
 
-testModKey :: String -> Mod
-testModKey k = defaultMod {
+testModKey :: String -> Maybe Mod
+testModKey k = Just $ defaultMod {
                              modArg = Just $ "Modified Argument: " <> k
                             , modSubtitle = Just $ "Modified Subtitle: " <> k
                             , modIcon = Just $ Icon False "Haskell logo.png"
