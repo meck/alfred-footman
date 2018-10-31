@@ -5,15 +5,7 @@
 --  
 --  @
 -- import Alfred
--- import Data.ByteString
 -- import Data.Time.LocalTime
---
--- newtype MyState = MyState String
---
--- instance AlfStatable MyState where
---   encodeState (MyState s) = fromString s
---   decodeState = Right . MyState . toString
---   defaultState = MyState []
 --
 -- myReturn :: AlfM MyState Return
 -- myReturn = do
@@ -54,15 +46,18 @@ import           Control.Monad.Trans.Class
 import           Control.Monad.Trans.Except
 import           Control.Monad.Trans.State
 import           Control.Monad                  ( when )
-import           Data.Aeson                     ( encode )
+import qualified Data.Aeson                    as J
+                                                ( encode )
+import           Data.Binary                    ( Binary )
+import qualified Data.Binary                   as B
 import           Data.ByteString                ( ByteString )
 import qualified Data.ByteString               as BS
                                                 ( writeFile
-                                                , readFile
                                                 , empty
                                                 )
 import qualified Data.ByteString.Lazy          as LBS
-                                                ( putStr )
+                                                ( putStr
+                                                , toStrict)
 import           Data.Maybe
 import           System.Directory               ( createDirectoryIfMissing
                                                 , doesFileExist
@@ -76,19 +71,16 @@ import           System.Exit                    ( die )
 -- | Class of the persistent user supplied state data type, 
 -- serialized and stored on disk between runs.
 -- `()` can be used if state is not required
-class AlfStatable s where
-  encodeState :: s -> ByteString
-  decodeState :: ByteString -> Either AlfredError s
+class Binary s => AlfStatable s where
   defaultState :: s  -- ^ The state is initialized at first run
 
 instance AlfStatable ByteString where
-  encodeState = id
-  decodeState = Right 
   defaultState = BS.empty
 
+instance AlfStatable String where
+  defaultState = ""
+
 instance AlfStatable () where
-  encodeState = const BS.empty
-  decodeState = const $Right ()
   defaultState = ()
 
 -- | The arguments passed from Alfred
@@ -103,7 +95,7 @@ type AlfM s =  StateT s (ExceptT AlfredError IO)
 alfMain :: AlfStatable s => AlfM s Return -> IO ()
 alfMain ops =
   runExceptT (evalStateT runIt (defaultState :: AlfStatable s => s))
-    >>= either (die . show) (LBS.putStr . encode)
+    >>= either (die . show) (LBS.putStr . J.encode)
  where
   runIt = do
     mustRunFromAlfred
@@ -128,9 +120,10 @@ loadState = do
   if not exists
     then put (defaultState :: AlfStatable s => s)
     else do
-      file' <- handle alfIOerrHand $ liftIO $ BS.readFile file
-      case decodeState file' of
-        (Left  err     ) -> throwAlfE err
+      file' <- handle alfIOerrHand $ liftIO $ B.decodeFileOrFail file
+      case file' of
+        (Left (_, err)) ->
+          throwAlfE $ OtherError $ "State decoding error: " <> err
         (Right newState) -> put newState
 
 -- | Save state to disk for next run
@@ -138,12 +131,17 @@ saveState :: AlfStatable s => AlfM s ()
 saveState = do
   st   <- get
   file <- stateFp
-  handle alfIOerrHand $ liftIO $ BS.writeFile file $ encodeState st
+  handle alfIOerrHand $ liftIO $ BS.writeFile file $ LBS.toStrict $ B.encode st
 
 
--- | The input from Alfred
+-- | The input from Alfred split on spaces
 alfArgs :: AlfM s Args
-alfArgs = liftIO getArgs
+alfArgs = do
+  a <- liftIO getArgs
+  case a of
+    [a'] -> return $ words a' 
+    [] -> return [] 
+    _ -> throwAlfE ArgumentError
 
 -- | Environment varibles that can be passed to the script.
 --
@@ -193,6 +191,7 @@ data AlfredError
   = StateUnserializingError String -- ^ Error when decoding saved state
   | EnvVarError String             -- ^ Error when a requested environment variable is not present
   | FileOperationError String      -- ^ IOErrors lifted
+  | ArgumentError                  -- ^ Malformad input
   | OtherError String              -- ^ For use in scripts
   deriving (Show)
 

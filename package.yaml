@@ -33,6 +33,7 @@ library:
   - transformers
   - directory
   - lifted-base
+  - binary
 
 
 executables:

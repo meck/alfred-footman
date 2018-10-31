@@ -32,7 +32,7 @@ instance ToJSON Return where
 -- @
 defaultReturn :: Return
 defaultReturn =
-  Return { items = [defaultItem], rerun = Nothing, retVars = empty }
+  Return { items = [], rerun = Nothing, retVars = empty }
 
 -- | Represents one item displayed by Alfred
 data Item = Item

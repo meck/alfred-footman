@@ -4,9 +4,6 @@
 module Main where
 
 import           Alfred
-import           Data.ByteString.UTF8           ( fromString
-                                                , toString
-                                                )
 import qualified Data.Map.Strict               as M
 import           Data.Time                      ( getZonedTime )
 import           Control.Exception
@@ -15,17 +12,9 @@ import qualified System.IO.Strict              as S
 main :: IO ()
 main = alfMain showExamples
 
-newtype MyState =
-  MyState String
-
-instance AlfStatable MyState where
-  encodeState (MyState s) = fromString s
-  decodeState = Right . MyState . toString
-  defaultState = MyState ""
-
-showExamples :: AlfM MyState Return
+showExamples :: AlfM String Return
 showExamples = do
-  (MyState state) <- get
+  state <- get
   args <- alfArgs
   -- The name of the script
   name <- envVariableThrow "alfred_workflow_name"
@@ -42,7 +31,7 @@ showExamples = do
   -- save for next run
   saveCurrentTime
   -- save the args to state for the next run
-  put (MyState $ concat args)
+  put $ concat args
 
   let it =
         [ defaultItem
@@ -163,13 +152,13 @@ addUids is = zipWith (\i u -> i { uid = u }) is uids
 qouteString :: String -> String
 qouteString x = q <> x <> q where q = "\""
 
-saveCurrentTime :: AlfM MyState ()
+saveCurrentTime :: AlfM String ()
 saveCurrentTime = do
   time    <- liftIO getZonedTime
   dataDir <- workflowDataDir
   liftIO $ writeFile (dataDir <> "/Timefile") $ show time
 
-loadTime :: AlfM MyState String
+loadTime :: AlfM String String
 loadTime = do
  dataDir <- workflowDataDir
  liftIO $ (\(x :: Either IOError String) -> case x of
