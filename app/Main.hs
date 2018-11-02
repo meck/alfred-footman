@@ -12,7 +12,7 @@ import qualified System.IO.Strict              as S
 main :: IO ()
 main = alfMain showExamples
 
-showExamples :: AlfM String Return
+showExamples :: AlfM String (Maybe Return)
 showExamples = do
   state <- get
   args <- alfArgs
@@ -20,7 +20,7 @@ showExamples = do
   name <- envVariableThrow "alfred_workflow_name"
   -- A variable passed thru environment
   inputVar <- envVariable "TestInput"
-  inputVar' <- case inputVar of 
+  inputVar' <- case inputVar of
                  Nothing ->  throwAlfE $ EnvVarError "Failed to get variable TestInput"
                  (Just v ) -> return v
 
@@ -129,11 +129,15 @@ showExamples = do
             , mods = Mods (testModKey "alt") (testModKey "cmd") (testModKey "shift") (testModKey "fn") (testModKey "ctrl")
             }
         ]
-  return $
-    defaultReturn
-      { items = addUids it
+  asScript <- envVariable "asScript"
+  case asScript of
+    (Just "true") -> do
+      liftIO $ putStr "Simple Script output"
+      return Nothing
+    _ -> return $ Just $ defaultReturn
+      { items   = addUids it
       , retVars = M.fromList [("OutputVar", "Output var from the main Object")]
-      -- , rerun = Just 1
+              -- , rerun = Just 1
       }
 
 

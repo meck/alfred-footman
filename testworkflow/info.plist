@@ -10,7 +10,7 @@
 		<array>
 			<dict>
 				<key>destinationuid</key>
-				<string>D1214D88-937B-4443-99DB-A183F3D3AB73</string>
+				<string>DC7E4293-2F8C-43AC-8403-72F3CFC35BD5</string>
 				<key>modifiers</key>
 				<integer>0</integer>
 				<key>modifiersubtext</key>
@@ -19,11 +19,37 @@
 				<false/>
 			</dict>
 		</array>
-		<key>D1214D88-937B-4443-99DB-A183F3D3AB73</key>
+		<key>15868DE4-B7ED-4376-9B2C-9F1DB5E6812A</key>
 		<array>
 			<dict>
 				<key>destinationuid</key>
-				<string>DC7E4293-2F8C-43AC-8403-72F3CFC35BD5</string>
+				<string>E93EB3A1-917A-4022-9D3C-2DE5BFF1887A</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
+		<key>CC0F77DD-6D67-493C-9E83-D345AE45BC19</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>E677C8C4-D79F-47A4-8DD8-0B636408242A</string>
+				<key>modifiers</key>
+				<integer>0</integer>
+				<key>modifiersubtext</key>
+				<string></string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
+		</array>
+		<key>E93EB3A1-917A-4022-9D3C-2DE5BFF1887A</key>
+		<array>
+			<dict>
+				<key>destinationuid</key>
+				<string>CC0F77DD-6D67-493C-9E83-D345AE45BC19</string>
 				<key>modifiers</key>
 				<integer>0</integer>
 				<key>modifiersubtext</key>
@@ -46,6 +72,19 @@
 		<dict>
 			<key>config</key>
 			<dict>
+				<key>path</key>
+				<string></string>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.action.browseinalfred</string>
+			<key>uid</key>
+			<string>DC7E4293-2F8C-43AC-8403-72F3CFC35BD5</string>
+			<key>version</key>
+			<integer>1</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
 				<key>alfredfiltersresults</key>
 				<false/>
 				<key>alfredfiltersresultsmatchmode</key>
@@ -53,11 +92,11 @@
 				<key>argumenttrimmode</key>
 				<integer>0</integer>
 				<key>argumenttype</key>
-				<integer>0</integer>
+				<integer>1</integer>
 				<key>escaping</key>
 				<integer>0</integer>
 				<key>keyword</key>
-				<string>fmtest</string>
+				<string>footmantest</string>
 				<key>queuedelaycustom</key>
 				<integer>3</integer>
 				<key>queuedelayimmediatelyinitially</key>
@@ -93,13 +132,65 @@
 		<dict>
 			<key>config</key>
 			<dict>
-				<key>path</key>
+				<key>concurrently</key>
+				<false/>
+				<key>escaping</key>
+				<integer>0</integer>
+				<key>script</key>
 				<string></string>
+				<key>scriptargtype</key>
+				<integer>1</integer>
+				<key>scriptfile</key>
+				<string>footman</string>
+				<key>type</key>
+				<integer>8</integer>
 			</dict>
 			<key>type</key>
-			<string>alfred.workflow.action.browseinalfred</string>
+			<string>alfred.workflow.action.script</string>
 			<key>uid</key>
-			<string>DC7E4293-2F8C-43AC-8403-72F3CFC35BD5</string>
+			<string>CC0F77DD-6D67-493C-9E83-D345AE45BC19</string>
+			<key>version</key>
+			<integer>2</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>lastpathcomponent</key>
+				<false/>
+				<key>onlyshowifquerypopulated</key>
+				<false/>
+				<key>removeextension</key>
+				<false/>
+				<key>text</key>
+				<string>{query}</string>
+				<key>title</key>
+				<string>Plain Script output</string>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.output.notification</string>
+			<key>uid</key>
+			<string>E677C8C4-D79F-47A4-8DD8-0B636408242A</string>
+			<key>version</key>
+			<integer>1</integer>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>argumenttype</key>
+				<integer>2</integer>
+				<key>keyword</key>
+				<string>footmanstest</string>
+				<key>subtext</key>
+				<string></string>
+				<key>text</key>
+				<string>Footman as script</string>
+				<key>withspace</key>
+				<false/>
+			</dict>
+			<key>type</key>
+			<string>alfred.workflow.input.keyword</string>
+			<key>uid</key>
+			<string>15868DE4-B7ED-4376-9B2C-9F1DB5E6812A</string>
 			<key>version</key>
 			<integer>1</integer>
 		</dict>
@@ -107,16 +198,17 @@
 			<key>config</key>
 			<dict>
 				<key>argument</key>
-				<string>'{query}', {allvars}</string>
-				<key>cleardebuggertext</key>
-				<false/>
-				<key>processoutputs</key>
-				<true/>
+				<string>{query}</string>
+				<key>variables</key>
+				<dict>
+					<key>asScript</key>
+					<string>true</string>
+				</dict>
 			</dict>
 			<key>type</key>
-			<string>alfred.workflow.utility.debug</string>
+			<string>alfred.workflow.utility.argument</string>
 			<key>uid</key>
-			<string>D1214D88-937B-4443-99DB-A183F3D3AB73</string>
+			<string>E93EB3A1-917A-4022-9D3C-2DE5BFF1887A</string>
 			<key>version</key>
 			<integer>1</integer>
 		</dict>
@@ -128,23 +220,44 @@
 		<key>0D57FF6B-4675-40C1-AFB2-811EBFDB6782</key>
 		<dict>
 			<key>xpos</key>
-			<integer>190</integer>
+			<integer>50</integer>
 			<key>ypos</key>
-			<integer>230</integer>
+			<integer>30</integer>
 		</dict>
-		<key>D1214D88-937B-4443-99DB-A183F3D3AB73</key>
+		<key>15868DE4-B7ED-4376-9B2C-9F1DB5E6812A</key>
 		<dict>
 			<key>xpos</key>
-			<integer>430</integer>
+			<integer>50</integer>
 			<key>ypos</key>
-			<integer>330</integer>
+			<integer>160</integer>
+		</dict>
+		<key>CC0F77DD-6D67-493C-9E83-D345AE45BC19</key>
+		<dict>
+			<key>xpos</key>
+			<integer>450</integer>
+			<key>ypos</key>
+			<integer>160</integer>
 		</dict>
 		<key>DC7E4293-2F8C-43AC-8403-72F3CFC35BD5</key>
 		<dict>
 			<key>xpos</key>
-			<integer>610</integer>
+			<integer>450</integer>
 			<key>ypos</key>
-			<integer>240</integer>
+			<integer>30</integer>
+		</dict>
+		<key>E677C8C4-D79F-47A4-8DD8-0B636408242A</key>
+		<dict>
+			<key>xpos</key>
+			<integer>640</integer>
+			<key>ypos</key>
+			<integer>160</integer>
+		</dict>
+		<key>E93EB3A1-917A-4022-9D3C-2DE5BFF1887A</key>
+		<dict>
+			<key>xpos</key>
+			<integer>290</integer>
+			<key>ypos</key>
+			<integer>190</integer>
 		</dict>
 	</dict>
 	<key>variables</key>

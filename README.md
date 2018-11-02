@@ -2,27 +2,19 @@
 
 ### A library for writing script filters in [Alfred](https://www.alfredapp.com) persistent state
 
-Made as an exercise for myself and my own usage.
+### Somewhat a WIP.
 
 
 Example usage:
 ``` haskell
 import Alfred
-import Data.ByteString
 import Data.Time.LocalTime
 
-newtype MyState = MyState String
-
-instance AlfStatable MyState where
-  encodeState (MyState s) = fromString s
-  decodeState = Right . MyState . toString
-  defaultState = MyState []
-
-myReturn :: AlfM MyState Return
+myReturn :: AlfM String Return
 myReturn = do
   time <- liftIO getZonedTime
-  (MyState prevTime) <- get
-  put (MyState $ show time)
+  prevTime <- get
+  put $ show time
   return $ defaultReturn
     { items = [ defaultItem { title    = "Time"
                             , subtitle = Just "Outputs the last time the scipt was run"

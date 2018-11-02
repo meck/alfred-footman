@@ -2,22 +2,22 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 -- | This module helps to write Alfred script filter indeded to be embedded in workflows.
 --  It also provides a persistent state on disk between runs.
---  
+--
 --  @
--- import Alfred
--- import Data.Time.LocalTime
---
--- myReturn :: AlfM MyState Return
--- myReturn = do
---   time <- liftIO getZonedTime
---   (MyState prevTime) <- get
---   put (MyState $ show time)
---   return $ defaultReturn
---     { items = [ defaultItem { title    = \"Time\"
---                             , subtitle = Just "Outputs the last time the scipt was run"
---                             , arg      = Just $ show prevTime }]}
---
--- main = alfMain myReturn
+ -- import Alfred
+ -- import Data.Time.LocalTime
+
+ -- myReturn :: AlfM String Return
+ -- myReturn = do
+ --   time <- liftIO getZonedTime
+ --   prevTime <- get
+ --   put $ show time
+ --   return $ defaultReturn
+ --     { items = [ defaultItem { title    = \"Time\"
+ --                             , subtitle = Just "Outputs the last time the scipt was run"
+ --                             , arg      = Just $ show prevTime }]}
+
+ -- main = alfMain myReturn
 --  @
 
 module Alfred
@@ -66,11 +66,11 @@ import           System.Environment             ( getArgs
                                                 , lookupEnv
                                                 , getProgName
                                                 )
-import           System.Exit                    ( die )
+import           System.Exit                    ( die, exitSuccess )
 
--- | Class of the persistent user supplied state data type, 
+-- | Class of the persistent user supplied state data type,
 -- serialized and stored on disk between runs.
--- `()` can be used if state is not required
+-- '()' can be used if state is not required
 class Binary s => AlfStatable s where
   defaultState :: s  -- ^ The state is initialized at first run
 
@@ -91,11 +91,16 @@ type AlfM s =  StateT s (ExceptT AlfredError IO)
 
 -- | Loads the state from disk, reads the arguments,
 --   processes your operations, saves the state. Then
---   writes any errors to stderr otherwise output the return
-alfMain :: AlfStatable s => AlfM s Return -> IO ()
+--   writes any errors to stderr otherwise output the return:
+--
+--   'Nothing' is for use with plain scripts in Alfred
+--   that just print to stdout
+--
+--   'Just' 'Return' is for use with script filters 
+alfMain :: AlfStatable s => AlfM s (Maybe Return) -> IO ()
 alfMain ops =
   runExceptT (evalStateT runIt (defaultState :: AlfStatable s => s))
-    >>= either (die . show) (LBS.putStr . J.encode)
+    >>= either (die . show) (maybe exitSuccess (LBS.putStr . J.encode))
  where
   runIt = do
     mustRunFromAlfred
@@ -139,8 +144,8 @@ alfArgs :: AlfM s Args
 alfArgs = do
   a <- liftIO getArgs
   case a of
-    [a'] -> return $ words a' 
-    [] -> return [] 
+    [a'] -> return $ words a'
+    [] -> return []
     _ -> throwAlfE ArgumentError
 
 -- | Environment varibles that can be passed to the script.

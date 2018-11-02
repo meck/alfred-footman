@@ -137,9 +137,9 @@ instance ToJSON Mod where
 -- @
 -- myMod =
 --   defaultMod
---     { modArg = "Alternative Output"
---     , modIcon = myIcon
---     , modSubtitle = "Im another subtitle"
+--     { modArg = Just "Alternative Output"
+--     , modIcon = Just myIcon
+--     , modSubtitle = Just "Im another subtitle"
 --     }
 -- @
 defaultMod :: Mod
@@ -166,7 +166,7 @@ instance ToJSON Mods where
 -- | Constructor:
 --
 -- @
--- myMod = defaultMods {cmd = myMod}
+-- myMod = defaultMods {alt = Just myMod}
 -- @
 defaultMods :: Mods
 defaultMods = Mods
