@@ -1,42 +1,43 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE LambdaCase #-}
 -- | This module helps to write Alfred script filter indeded to be embedded in workflows.
 --  It also provides a persistent state on disk between runs.
 --
 --  @
- -- import Alfred
- -- import Data.Time.LocalTime
-
- -- myReturn :: AlfM String Return
- -- myReturn = do
- --   time <- liftIO getZonedTime
- --   prevTime <- get
- --   put $ show time
- --   return $ defaultReturn
- --     { items = [ defaultItem { title    = \"Time\"
- --                             , subtitle = Just "Outputs the last time the scipt was run"
- --                             , arg      = Just $ show prevTime }]}
-
- -- main = alfMain myReturn
+-- import Alfred
+-- import Data.Time.LocalTime
+--
+-- myReturn :: AlfM String Return
+-- myReturn = do
+--   time <- liftIO getZonedTime
+--   prevTime <- get
+--   put $ show time
+--   return $ defaultReturn
+--     { items = [ defaultItem { title    = \"Time\"
+--                             , subtitle = Just "Outputs the last time the scipt was run"
+--                             , arg      = Just $ show prevTime }]}
+--
+-- main = alfMain myReturn
 --  @
 
 module Alfred
-  ( AlfStatable(..)
-  , AlfM
-  , Args
-  , alfMain
-  , alfArgs
-  , envVariable
-  , envVariableThrow
-  , workflowCacheDir
-  , workflowDataDir
-  , AlfredError(..)
-  , throwAlfE
-  , module Alfred.Types
-  , put
-  , get
-  , liftIO
-  )
+    ( AlfStatable(..)
+    , AlfM
+    , Args
+    , alfMain
+    , alfArgs
+    , envVariable
+    , envVariableThrow
+    , workflowCacheDir
+    , workflowDataDir
+    , AlfredError(..)
+    , throwAlfE
+    , module Alfred.Types
+    , put
+    , get
+    , liftIO
+    )
 where
 
 import           Alfred.Types
@@ -57,7 +58,8 @@ import qualified Data.ByteString               as BS
                                                 )
 import qualified Data.ByteString.Lazy          as LBS
                                                 ( putStr
-                                                , toStrict)
+                                                , toStrict
+                                                )
 import           Data.Maybe
 import           System.Directory               ( createDirectoryIfMissing
                                                 , doesFileExist
@@ -66,7 +68,9 @@ import           System.Environment             ( getArgs
                                                 , lookupEnv
                                                 , getProgName
                                                 )
-import           System.Exit                    ( die, exitSuccess )
+import           System.Exit                    ( die
+                                                , exitSuccess
+                                                )
 
 -- | Class of the persistent user supplied state data type,
 -- serialized and stored on disk between runs.
@@ -89,9 +93,10 @@ type Args = [String]
 -- | The main monad
 type AlfM s =  StateT s (ExceptT AlfredError IO)
 
--- | Loads the state from disk, reads the arguments,
---   processes your operations, saves the state. Then
---   writes any errors to stderr otherwise output the return:
+-- | Loads the state from disk, if the state is not present
+--   or can't be read a 'defaultState' is used, reads the arguments,
+--   processes your operations, saves the state.
+--   Then writes any errors to stderr otherwise output the return:
 --
 --   'Nothing' is for use with plain scripts in Alfred
 --   that just print to stdout
@@ -99,54 +104,61 @@ type AlfM s =  StateT s (ExceptT AlfredError IO)
 --   'Just' 'Return' is for use with script filters 
 alfMain :: AlfStatable s => AlfM s (Maybe Return) -> IO ()
 alfMain ops =
-  runExceptT (evalStateT runIt (defaultState :: AlfStatable s => s))
-    >>= either (die . show) (maybe exitSuccess (LBS.putStr . J.encode))
- where
-  runIt = do
-    mustRunFromAlfred
-    mustHaveBundleID
-    loadState
-    r <- ops
-    saveState
-    return r
+    runExceptT (evalStateT runIt (defaultState :: AlfStatable s => s))
+        >>= either (die . show) (maybe exitSuccess (LBS.putStr . J.encode))
+  where
+    runIt = do
+        mustRunFromAlfred
+        mustHaveBundleID
+        loadState
+        r <- ops
+        saveState
+        return r
 
 -- | The file where state is saved between runs
 stateFp :: AlfM s FilePath
 stateFp = do
-  dataDir <- workflowDataDir
-  u       <- envVariableThrow "alfred_workflow_uid"
-  return $ dataDir <> "/AlfredState." <> u
+    dataDir <- workflowDataDir
+    u       <- envVariableThrow "alfred_workflow_uid"
+    return $ dataDir <> "/AlfredState." <> u
 
--- | Loads a state from disk if there is one otherwise puts an empty state
+-- | Loads a state from disk if there is one otherwise puts an default state
+--   If the state on disk kan be read it is replaced with a default one for
+--   the next run, then an error is thrown
 loadState :: AlfStatable s => AlfM s ()
 loadState = do
-  file   <- stateFp
-  exists <- liftIO $ doesFileExist file
-  if not exists
-    then put (defaultState :: AlfStatable s => s)
-    else do
-      file' <- handle alfIOerrHand $ liftIO $ B.decodeFileOrFail file
-      case file' of
-        (Left (_, err)) ->
-          throwAlfE $ OtherError $ "State decoding error: " <> err
-        (Right newState) -> put newState
+    file   <- stateFp
+    exists <- liftIO $ doesFileExist file
+    if not exists
+        then put (defaultState :: AlfStatable s => s)
+        else handle alfIOerrHand (liftIO $ B.decodeFileOrFail file) >>= \case
+            (Left (_, err)) -> do
+                put (defaultState :: AlfStatable s => s)
+                saveState
+                throwAlfE
+                    $  OtherError
+                    $  "State decoding error: "
+                    <> "\nState on disk has been reset\n\n"
+                    <> err
+            (Right newState) -> put newState
 
 -- | Save state to disk for next run
 saveState :: AlfStatable s => AlfM s ()
 saveState = do
-  st   <- get
-  file <- stateFp
-  handle alfIOerrHand $ liftIO $ BS.writeFile file $ LBS.toStrict $ B.encode st
+    st   <- get
+    file <- stateFp
+    handle alfIOerrHand $ liftIO $ BS.writeFile file $ LBS.toStrict $ B.encode
+        st
 
 
 -- | The input from Alfred split on spaces
 alfArgs :: AlfM s Args
 alfArgs = do
-  a <- liftIO getArgs
-  case a of
-    [a'] -> return $ words a'
-    [] -> return []
-    _ -> throwAlfE ArgumentError
+    a <- liftIO getArgs
+    case a of
+        [a'] -> return $ words a'
+        []   -> return []
+        _    -> throwAlfE ArgumentError
 
 -- | Environment varibles that can be passed to the script.
 --
@@ -157,26 +169,30 @@ envVariable varName = liftIO $ lookupEnv varName
 -- | Version of 'envVariable' that throws a 'EnvVarError' if the variable is not present
 envVariableThrow :: String -> AlfM s String
 envVariableThrow varName = do
-  mVar <- liftIO $ lookupEnv varName
-  case mVar of
-    Just v  -> return v
-    Nothing -> throwAlfE $ EnvVarError $ "No environment variable named: " <> varName
+    mVar <- liftIO $ lookupEnv varName
+    case mVar of
+        Just v -> return v
+        Nothing ->
+            throwAlfE
+                $  EnvVarError
+                $  "No environment variable named: "
+                <> varName
 
 -- | The directory to store volatile data, is created upon request
 workflowCacheDir :: AlfM s FilePath
 workflowCacheDir = do
-  path <- envVariableThrow "alfred_workflow_cache"
-  handle alfIOerrHand $ liftIO $ createDirectoryIfMissing True path
-  return path
+    path <- envVariableThrow "alfred_workflow_cache"
+    handle alfIOerrHand $ liftIO $ createDirectoryIfMissing True path
+    return path
 
 -- | The directory to store permanent data, is created upon request
 --
 -- The state is stored here between runs
 workflowDataDir :: AlfM s FilePath
 workflowDataDir = do
-  path <- envVariableThrow "alfred_workflow_data"
-  handle alfIOerrHand $ liftIO $ createDirectoryIfMissing True path
-  return path
+    path <- envVariableThrow "alfred_workflow_data"
+    handle alfIOerrHand $ liftIO $ createDirectoryIfMissing True path
+    return path
 
 -- | Exits with error if run from outside Alfred
 mustRunFromAlfred :: AlfM s ()
@@ -202,7 +218,7 @@ data AlfredError
 
 -- | Convenience for throwing a 'AlfredError'
 throwAlfE :: AlfredError -> AlfM s a
-throwAlfE = lift .throwE
+throwAlfE = lift . throwE
 
 -- | Handler for IOErrors
 alfIOerrHand :: IOError -> AlfM s a
