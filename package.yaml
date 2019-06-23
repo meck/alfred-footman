@@ -1,5 +1,5 @@
 name:                alfred-footman
-version:             0.1.0.0
+version:             0.1.1
 github:              "meck/alfred-footman"
 license:             BSD3
 author:              "Johan Eklund"
@@ -34,6 +34,10 @@ library:
   - directory
   - lifted-base
   - binary
+  - github
+  - semver
+  - text
+  - vector
 
 
 executables:

@@ -4,8 +4,10 @@
 module Main where
 
 import           Alfred
+import           Alfred.Updater
 import qualified Data.Map.Strict               as M
 import           Data.Time                      ( getZonedTime )
+import           Data.Maybe                     ( maybeToList )
 import           Control.Exception
 import qualified System.IO.Strict              as S
 
@@ -32,6 +34,9 @@ showExamples = do
   saveCurrentTime
   -- save the args to state for the next run
   put $ concat args
+
+  -- Get the update Item
+  updateItem' <- updateItem "meck" "alfred-hoogle"
 
   let it =
         [ defaultItem
@@ -129,6 +134,8 @@ showExamples = do
             , mods = Mods (testModKey "alt") (testModKey "cmd") (testModKey "shift") (testModKey "fn") (testModKey "ctrl")
             }
         ]
+        ++ maybeToList updateItem'
+
   asScript <- envVariable "asScript"
   case asScript of
     (Just "true") -> do

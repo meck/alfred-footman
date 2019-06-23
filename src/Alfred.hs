@@ -37,6 +37,9 @@ module Alfred
     , put
     , get
     , liftIO
+    , RerunTag
+    , setRerunWithTag
+    , isRerunWithTag
     )
 where
 
@@ -60,6 +63,7 @@ import qualified Data.ByteString.Lazy          as LBS
                                                 ( putStr
                                                 , toStrict
                                                 )
+import qualified Data.Map.Strict               as M
 import           Data.Maybe
 import           System.Directory               ( createDirectoryIfMissing
                                                 , doesFileExist
@@ -101,7 +105,7 @@ type AlfM s =  StateT s (ExceptT AlfredError IO)
 --   'Nothing' is for use with plain scripts in Alfred
 --   that just print to stdout
 --
---   'Just' 'Return' is for use with script filters 
+--   'Just' 'Return' is for use with script filters
 alfMain :: AlfStatable s => AlfM s (Maybe Return) -> IO ()
 alfMain ops =
     runExceptT (evalStateT runIt (defaultState :: AlfStatable s => s))
@@ -213,6 +217,7 @@ data AlfredError
   | EnvVarError String             -- ^ Error when a requested environment variable is not present
   | FileOperationError String      -- ^ IOErrors lifted
   | ArgumentError                  -- ^ Malformad input
+  | UpdaterError String            -- ^ Error when checking for new version
   | OtherError String              -- ^ For use in scripts
   deriving (Show)
 
@@ -223,3 +228,31 @@ throwAlfE = lift . throwE
 -- | Handler for IOErrors
 alfIOerrHand :: IOError -> AlfM s a
 alfIOerrHand = throwAlfE . FileOperationError . show
+
+-- | Used to identify a rerun of a script
+type RerunTag = String
+
+-- | The envar to store the rerun tag
+rerunKey ::String
+rerunKey = "rerun_script_with_tag"
+
+-- | Function to modify a 'Return' to rerun and mark it with 'RerunTag'
+setRerunWithTag :: RerunTag -> AlfM s (Return -> Return)
+setRerunWithTag tag = do
+    isRR <- isRerunWithTag tag
+    return $ if isRR
+        then id
+        else
+            (\ret -> ret { rerun   = Just 0.1
+                         , retVars = M.insert rerunKey tag (retVars ret)
+                         }
+            )
+
+-- | True if rerun of a 'RerunTag' set with 'setRerunWithTag'
+isRerunWithTag :: RerunTag -> AlfM s Bool
+isRerunWithTag tag =
+    (\case
+            (Just t) -> t == tag
+            _        -> False
+        )
+        <$> envVariable rerunKey
